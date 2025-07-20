@@ -20,16 +20,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project
 COPY . .
 
-# Convert line endings and make entrypoint executable
-RUN sed -i 's/\r$//' /app/docker-entrypoint.sh && \
-    chmod +x /app/docker-entrypoint.sh
-
 # Expose port
 EXPOSE 8000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD nc -z localhost 8000 || exit 1
-
-# Run the application
-CMD ["/app/docker-entrypoint.sh"]
+# Run Django directly
+CMD ["sh", "-c", "sleep 10 && python manage.py makemigrations --noinput && python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"]

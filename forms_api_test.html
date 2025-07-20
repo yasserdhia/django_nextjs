@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار API Forms</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            direction: rtl;
+        }
+        
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            max-width: 900px;
+            width: 100%;
+            margin: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 30px;
+            font-size: 32px;
+        }
+        
+        .test-section {
+            background: #f8f9fa;
+            border: 2px solid #667eea;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        
+        .test-section h3 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 15px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 600;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .json-output {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-card h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .stat-card .number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 اختبار API Forms</h1>
+        
+        <div class="test-section">
+            <h3>1. اختبار المصادقة</h3>
+            <button class="btn" onclick="testAuth()">تسجيل الدخول</button>
+            <div id="authResult"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>2. اختبار API الإحصائيات</h3>
+            <button class="btn" onclick="testStats()">جلب الإحصائيات</button>
+            <div id="statsResult"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>3. اختبار API الجهات الحكومية</h3>
+            <button class="btn" onclick="testGovernmentEntities()">جلب الجهات الحكومية</button>
+            <div id="entitiesResult"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>4. اختبار API ملاحظات المواطنين</h3>
+            <button class="btn" onclick="testCitizenFeedback()">جلب ملاحظات المواطنين</button>
+            <div id="feedbackResult"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>5. اختبار شامل للصفحة</h3>
+            <button class="btn" onclick="testFullPage()">اختبار كامل</button>
+            <div id="fullTestResult"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+        let authToken = null;
+        
+        async function testAuth() {
+            const resultDiv = document.getElementById('authResult');
+            const button = event.target;
+            
+            button.disabled = true;
+            button.innerHTML = '🔄 جاري تسجيل الدخول...';
+            
+            try {
+                const response = await fetch(`${API_URL}/api/auth/token/login/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@admin.com',
+                        password: 'admin123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.auth_token) {
+                    authToken = data.auth_token;
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ تم تسجيل الدخول بنجاح<br>
+                            <strong>Token:</strong> ${data.auth_token.substring(0, 20)}...
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            ❌ فشل في تسجيل الدخول<br>
+                            <div class="json-output">${JSON.stringify(data, null, 2)}</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ خطأ في الاتصال: ${error.message}
+                    </div>
+                `;
+            } finally {
+                button.disabled = false;
+                button.innerHTML = 'تسجيل الدخول';
+            }
+        }
+        
+        async function testStats() {
+            const resultDiv = document.getElementById('statsResult');
+            const button = event.target;
+            
+            if (!authToken) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ يجب تسجيل الدخول أولاً
+                    </div>
+                `;
+                return;
+            }
+            
+            button.disabled = true;
+            button.innerHTML = '🔄 جاري جلب الإحصائيات...';
+            
+            try {
+                const response = await fetch(`${API_URL}/api/forms/dashboard/stats/`, {
+                    headers: {
+                        'Authorization': `Token ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ تم جلب الإحصائيات بنجاح
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <h4>إجمالي الجهات</h4>
+                                    <div class="number">${data.government_entities.total_entities}</div>
+                                </div>
+                                <div class="stat-card">
+                                    <h4>الجهات المعتمدة</h4>
+                                    <div class="number">${data.government_entities.approved_entities}</div>
+                                </div>
+                                <div class="stat-card">
+                                    <h4>في انتظار الموافقة</h4>
+                                    <div class="number">${data.government_entities.pending_entities}</div>
+                                </div>
+                                <div class="stat-card">
+                                    <h4>إجمالي الملاحظات</h4>
+                                    <div class="number">${data.citizen_feedback.total_feedback}</div>
+                                </div>
+                                <div class="stat-card">
+                                    <h4>المستخدمين النشطين</h4>
+                                    <div class="number">${data.active_users}</div>
+                                </div>
+                                <div class="stat-card">
+                                    <h4>إجمالي التقديمات</h4>
+                                    <div class="number">${data.total_submissions}</div>
+                                </div>
+                            </div>
+                            <div class="json-output">${JSON.stringify(data, null, 2)}</div>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            ❌ فشل في جلب الإحصائيات<br>
+                            <div class="json-output">${JSON.stringify(data, null, 2)}</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ خطأ في الاتصال: ${error.message}
+                    </div>
+                `;
+            } finally {
+                button.disabled = false;
+                button.innerHTML = 'جلب الإحصائيات';
+            }
+        }
+        
+        async function testGovernmentEntities() {
+            const resultDiv = document.getElementById('entitiesResult');
+            const button = event.target;
+            
+            if (!authToken) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ يجب تسجيل الدخول أولاً
+                    </div>
+                `;
+                return;
+            }
+            
+            button.disabled = true;
+            button.innerHTML = '🔄 جاري جلب الجهات الحكومية...';
+            
+            try {
+                const response = await fetch(`${API_URL}/api/forms/government-entities/`, {
+                    headers: {
+                        'Authorization': `Token ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ تم جلب الجهات الحكومية بنجاح (${data.length} جهة)
+                            <div class="json-output">${JSON.stringify(data, null, 2)}</div>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            ❌ فشل في جلب الجهات الحكومية<br>
+                            <div class="json-output">${JSON.stringify(data, null, 2)}</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ خطأ في الاتصال: ${error.message}
+                    </div>
+                `;
+            } finally {
+                button.disabled = false;
+                button.innerHTML = 'جلب الجهات الحكومية';
+            }
+        }
+        
+        async function testCitizenFeedback() {
+            const resultDiv = document.getElementById('feedbackResult');
+            const button = event.target;
+            
+            if (!authToken) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ يجب تسجيل الدخول أولاً
+                    </div>
+                `;
+                return;
+            }
+            
+            button.disabled = true;
+            button.innerHTML = '🔄 جاري جلب ملاحظات المواطنين...';
+            
+            try {
+                const response = await fetch(`${API_URL}/api/forms/citizen-feedback/`, {
+                    headers: {
+                        'Authorization': `Token ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ تم جلب ملاحظات المواطنين بنجاح (${data.length} ملاحظة)
+                            <div class="json-output">${JSON.stringify(data, null, 2)}</div>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            ❌ فشل في جلب ملاحظات المواطنين<br>
+                            <div class="json-output">${JSON.stringify(data, null, 2)}</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ خطأ في الاتصال: ${error.message}
+                    </div>
+                `;
+            } finally {
+                button.disabled = false;
+                button.innerHTML = 'جلب ملاحظات المواطنين';
+            }
+        }
+        
+        async function testFullPage() {
+            const resultDiv = document.getElementById('fullTestResult');
+            const button = event.target;
+            
+            button.disabled = true;
+            button.innerHTML = '🔄 جاري الاختبار الشامل...';
+            
+            let results = [];
+            
+            try {
+                // Test 1: Authentication
+                const authResponse = await fetch(`${API_URL}/api/auth/token/login/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@admin.com',
+                        password: 'admin123'
+                    })
+                });
+                
+                const authData = await authResponse.json();
+                
+                if (authResponse.ok && authData.auth_token) {
+                    authToken = authData.auth_token;
+                    results.push('✅ المصادقة تعمل');
+                } else {
+                    results.push('❌ المصادقة لا تعمل');
+                }
+                
+                // Test 2: Stats API
+                const statsResponse = await fetch(`${API_URL}/api/forms/dashboard/stats/`, {
+                    headers: {
+                        'Authorization': `Token ${authToken}`
+                    }
+                });
+                
+                if (statsResponse.ok) {
+                    const statsData = await statsResponse.json();
+                    results.push('✅ API الإحصائيات يعمل');
+                    results.push(`📊 إجمالي الجهات: ${statsData.government_entities.total_entities}`);
+                    results.push(`📊 إجمالي الملاحظات: ${statsData.citizen_feedback.total_feedback}`);
+                } else {
+                    results.push('❌ API الإحصائيات لا يعمل');
+                }
+                
+                // Test 3: Government Entities API
+                const entitiesResponse = await fetch(`${API_URL}/api/forms/government-entities/`, {
+                    headers: {
+                        'Authorization': `Token ${authToken}`
+                    }
+                });
+                
+                if (entitiesResponse.ok) {
+                    const entitiesData = await entitiesResponse.json();
+                    results.push(`✅ API الجهات الحكومية يعمل (${entitiesData.length} جهة)`);
+                } else {
+                    results.push('❌ API الجهات الحكومية لا يعمل');
+                }
+                
+                // Test 4: Citizen Feedback API
+                const feedbackResponse = await fetch(`${API_URL}/api/forms/citizen-feedback/`, {
+                    headers: {
+                        'Authorization': `Token ${authToken}`
+                    }
+                });
+                
+                if (feedbackResponse.ok) {
+                    const feedbackData = await feedbackResponse.json();
+                    results.push(`✅ API ملاحظات المواطنين يعمل (${feedbackData.length} ملاحظة)`);
+                } else {
+                    results.push('❌ API ملاحظات المواطنين لا يعمل');
+                }
+                
+                const allSuccess = results.every(result => result.startsWith('✅') || result.startsWith('📊'));
+                
+                resultDiv.innerHTML = `
+                    <div class="${allSuccess ? 'success' : 'error'}">
+                        <h4>${allSuccess ? '🎉 جميع الاختبارات نجحت!' : '⚠️ بعض الاختبارات فشلت'}</h4>
+                        <ul style="margin-top: 10px; padding-right: 20px;">
+                            ${results.map(result => `<li>${result}</li>`).join('')}
+                        </ul>
+                        ${allSuccess ? '<p style="margin-top: 15px; font-weight: bold;">🎯 صفحة http://localhost:3000/admin/forms يجب أن تعمل الآن!</p>' : ''}
+                    </div>
+                `;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ خطأ في الاختبار الشامل: ${error.message}
+                    </div>
+                `;
+            } finally {
+                button.disabled = false;
+                button.innerHTML = 'اختبار كامل';
+            }
+        }
+    </script>
+</body>
+</html>

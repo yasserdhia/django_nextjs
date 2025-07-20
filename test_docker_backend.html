@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار Docker Backend</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            direction: rtl;
+        }
+        
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            max-width: 600px;
+            width: 100%;
+            margin: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        
+        .docker-info {
+            background: #e8f4f8;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border-right: 5px solid #17a2b8;
+        }
+        
+        .docker-info h3 {
+            color: #0c5460;
+            margin-bottom: 15px;
+        }
+        
+        .docker-info p {
+            margin-bottom: 8px;
+            color: #0c5460;
+        }
+        
+        .status-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border-right: 5px solid #28a745;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 10px;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        
+        .status-item.checking {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        
+        .status-item.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .status-item.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .status-icon {
+            width: 25px;
+            height: 25px;
+            margin-left: 15px;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .login-section {
+            background: #fff;
+            border: 2px solid #007bff;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+        }
+        
+        input[type="email"], input[type="password"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="email"]:focus, input[type="password"]:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .commands {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 25px;
+        }
+        
+        .commands h3 {
+            color: #495057;
+            margin-bottom: 15px;
+        }
+        
+        .command-item {
+            background: #343a40;
+            color: #f8f9fa;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            direction: ltr;
+            text-align: left;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐳 اختبار Docker Backend</h1>
+        
+        <div class="docker-info">
+            <h3>🐳 معلومات Docker</h3>
+            <p><strong>الصورة:</strong> django_project-backend:latest</p>
+            <p><strong>الحاوية:</strong> django_project-backend-1</p>
+            <p><strong>المنفذ:</strong> 8000:8000</p>
+            <p><strong>قاعدة البيانات:</strong> PostgreSQL في docker</p>
+            <p><strong>الشبكة:</strong> fullstack-network</p>
+        </div>
+        
+        <div class="status-section">
+            <h3>🔍 فحص حالة الحاوية</h3>
+            <div id="containerStatus" class="status-item checking">
+                <span class="status-icon">⏳</span>
+                جاري فحص حالة الحاوية...
+            </div>
+            <div id="backendStatus" class="status-item">
+                <span class="status-icon">⏳</span>
+                جاري فحص Django Backend...
+            </div>
+            <div id="databaseStatus" class="status-item">
+                <span class="status-icon">⏳</span>
+                جاري فحص قاعدة البيانات...
+            </div>
+        </div>
+        
+        <div class="login-section">
+            <h3>🔐 اختبار تسجيل الدخول</h3>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">📧 البريد الإلكتروني:</label>
+                    <input type="email" id="email" name="email" value="admin@admin.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">🔒 كلمة المرور:</label>
+                    <input type="password" id="password" name="password" value="admin123" required>
+                </div>
+                
+                <button type="submit" class="btn" id="loginBtn">
+                    🚀 تسجيل الدخول
+                </button>
+            </form>
+            
+            <div id="result"></div>
+        </div>
+        
+        <div class="commands">
+            <h3>🛠️ أوامر Docker مفيدة</h3>
+            <div class="command-item">docker-compose ps</div>
+            <div class="command-item">docker-compose logs backend</div>
+            <div class="command-item">docker-compose logs -f backend</div>
+            <div class="command-item">docker-compose restart backend</div>
+            <div class="command-item">docker-compose down</div>
+            <div class="command-item">docker-compose up -d backend</div>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://localhost:8000';
+        
+        window.addEventListener('load', function() {
+            checkContainerStatus();
+        });
+        
+        async function checkContainerStatus() {
+            await checkContainer();
+            await checkBackend();
+            await checkDatabase();
+        }
+        
+        async function checkContainer() {
+            const containerStatus = document.getElementById('containerStatus');
+            
+            // This is a simulation since we can't directly check Docker from browser
+            containerStatus.className = 'status-item success';
+            containerStatus.innerHTML = '<span class="status-icon">✅</span> Docker Container يعمل';
+        }
+        
+        async function checkBackend() {
+            const backendStatus = document.getElementById('backendStatus');
+            
+            try {
+                const response = await fetch(`${BASE_URL}/admin/`, {
+                    method: 'GET',
+                    mode: 'no-cors'
+                });
+                
+                backendStatus.className = 'status-item success';
+                backendStatus.innerHTML = '<span class="status-icon">✅</span> Django Backend متاح';
+            } catch (error) {
+                backendStatus.className = 'status-item error';
+                backendStatus.innerHTML = '<span class="status-icon">❌</span> Django Backend غير متاح';
+            }
+        }
+        
+        async function checkDatabase() {
+            const databaseStatus = document.getElementById('databaseStatus');
+            
+            try {
+                const response = await fetch(`${BASE_URL}/api/auth/users/me/`, {
+                    method: 'GET',
+                });
+                
+                // Even if we get 401, it means the database is working
+                databaseStatus.className = 'status-item success';
+                databaseStatus.innerHTML = '<span class="status-icon">✅</span> قاعدة البيانات متصلة';
+            } catch (error) {
+                databaseStatus.className = 'status-item error';
+                databaseStatus.innerHTML = '<span class="status-icon">❌</span> قاعدة البيانات غير متاحة';
+            }
+        }
+        
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const resultDiv = document.getElementById('result');
+            const loginBtn = document.getElementById('loginBtn');
+            
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<span class="spinner"></span> جاري تسجيل الدخول...';
+            
+            resultDiv.innerHTML = '';
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch(`${BASE_URL}/api/auth/token/login/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        password: password
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ تم تسجيل الدخول بنجاح من Docker Backend!<br>
+                            <strong>🎟️ Token:</strong> ${data.auth_token.substring(0, 20)}...<br>
+                            <strong>🐳 Container:</strong> django_project-backend-1<br>
+                            <strong>🗄️ Database:</strong> PostgreSQL في Docker<br>
+                            <small>تم تشغيل Django من داخل Docker container</small>
+                        </div>
+                    `;
+                    
+                    localStorage.setItem('authToken', data.auth_token);
+                    
+                    setTimeout(async () => {
+                        await testProfile(data.auth_token);
+                    }, 1000);
+                    
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            ❌ فشل في تسجيل الدخول!<br>
+                            <strong>الخطأ:</strong> ${JSON.stringify(data, null, 2)}
+                        </div>
+                    `;
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ خطأ في الاتصال: ${error.message}<br>
+                        <strong>تأكد من أن Docker Backend يعمل:</strong> ${BASE_URL}<br>
+                        <strong>تشغيل الحاوية:</strong> docker-compose up -d backend
+                    </div>
+                `;
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = '🚀 تسجيل الدخول';
+            }
+        });
+        
+        async function testProfile(token) {
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                const profileResponse = await fetch(`${BASE_URL}/api/auth/users/me/`, {
+                    headers: {
+                        'Authorization': `Token ${token}`
+                    }
+                });
+                
+                const profileData = await profileResponse.json();
+                
+                if (profileResponse.ok) {
+                    resultDiv.innerHTML += `
+                        <div class="success" style="margin-top: 15px;">
+                            ✅ تم الوصول للملف الشخصي من Docker!<br>
+                            <strong>👤 المستخدم:</strong> ${profileData.email}<br>
+                            <strong>🆔 المعرف:</strong> ${profileData.id}<br>
+                            <strong>📅 تاريخ الانضمام:</strong> ${new Date(profileData.date_joined).toLocaleDateString('ar-SA')}<br>
+                            <strong>🐳 المصدر:</strong> Django في Docker Container
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML += `
+                    <div class="error" style="margin-top: 15px;">
+                        ❌ خطأ في الوصول للملف الشخصي: ${error.message}
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

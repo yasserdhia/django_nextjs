@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import apiClient from '@/lib/apiClient';
-import api from '@/lib/api';
 import { runAllTests } from '@/utils/serverTest';
 
 export default function TestConnection() {
@@ -18,7 +17,7 @@ export default function TestConnection() {
     {
       name: 'اختبار تسجيل الدخول',
       test: async () => {
-        const response = await api.post('/api/auth/jwt/create/', {
+        const response = await apiClient.post('/api/auth/jwt/create/', {
           username: 'testuser',
           password: 'testpass123'
         });

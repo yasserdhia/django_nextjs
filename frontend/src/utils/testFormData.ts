@@ -1,5 +1,5 @@
 // اختبار إرسال بيانات صحيحة للاستمارة
-import api from '@/lib/api';
+import apiClient from '@/lib/apiClient';
 
 // بيانات اختبار صحيحة
 const testFormData = {
@@ -74,7 +74,7 @@ export async function testFormSubmission(): Promise<void> {
     console.log('📤 البيانات المرسلة:', testFormData);
     
     // إرسال البيانات
-    const response = await api.post('/api/forms/government-entities/', testFormData, {
+    const response = await apiClient.post('/api/forms/government-entities/', testFormData, {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,

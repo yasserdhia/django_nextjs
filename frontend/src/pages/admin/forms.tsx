@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import apiClient from '@/lib/apiClient';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 // TypeScript declaration for jsPDF autoTable
 declare module 'jspdf' {
@@ -153,13 +153,99 @@ const FormsAdminPage: React.FC = () => {
   // Export functions
   const exportToExcel = (data: any[], filename: string, headers: string[]) => {
     try {
-      const worksheet = XLSX.utils.json_to_sheet(data);
+      // Create workbook and worksheet
       const workbook = XLSX.utils.book_new();
       
-      // Set headers in Arabic
-      XLSX.utils.sheet_add_aoa(worksheet, [headers], { origin: 'A1' });
+      // Prepare data with headers - use Arabic keys for better formatting
+      const worksheetData = [
+        headers,
+        ...data.map(item => Object.values(item))
+      ];
       
-      // Add the workbook
+      const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+      
+      // Calculate column widths based on content
+      const colWidths = headers.map((header, index) => {
+        const headerLength = header.length;
+        const maxDataLength = Math.max(...data.map(row => {
+          const value = Object.values(row)[index];
+          return value ? String(value).length : 0;
+        }));
+        return { wch: Math.max(headerLength + 2, maxDataLength + 2, 12) };
+      });
+      worksheet['!cols'] = colWidths;
+      
+      // Get range for styling
+      const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+      
+      // Style the header row with beautiful formatting
+      for (let col = range.s.c; col <= range.e.c; col++) {
+        const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
+        if (!worksheet[cellAddress]) continue;
+        
+        worksheet[cellAddress].s = {
+          font: { 
+            bold: true, 
+            color: { rgb: "FFFFFF" },
+            size: 12
+          },
+          fill: { 
+            fgColor: { rgb: "4F46E5" } 
+          },
+          alignment: { 
+            horizontal: "center", 
+            vertical: "center",
+            wrapText: true
+          },
+          border: {
+            top: { style: "medium", color: { rgb: "000000" } },
+            bottom: { style: "medium", color: { rgb: "000000" } },
+            left: { style: "medium", color: { rgb: "000000" } },
+            right: { style: "medium", color: { rgb: "000000" } }
+          }
+        };
+      }
+      
+      // Style data rows with alternating colors
+      for (let row = 1; row <= data.length; row++) {
+        for (let col = range.s.c; col <= range.e.c; col++) {
+          const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+          if (!worksheet[cellAddress]) continue;
+          
+          const isEvenRow = row % 2 === 0;
+          worksheet[cellAddress].s = {
+            alignment: { 
+              horizontal: "center", 
+              vertical: "center",
+              wrapText: true
+            },
+            border: {
+              top: { style: "thin", color: { rgb: "D1D5DB" } },
+              bottom: { style: "thin", color: { rgb: "D1D5DB" } },
+              left: { style: "thin", color: { rgb: "D1D5DB" } },
+              right: { style: "thin", color: { rgb: "D1D5DB" } }
+            },
+            fill: { 
+              fgColor: { 
+                rgb: isEvenRow ? "F3F4F6" : "FFFFFF" 
+              } 
+            },
+            font: {
+              size: 11,
+              color: { rgb: "374151" }
+            }
+          };
+        }
+      }
+      
+      // Set row heights
+      const rowHeights = [];
+      for (let i = 0; i <= data.length; i++) {
+        rowHeights[i] = { hpx: i === 0 ? 25 : 20 }; // Header row taller
+      }
+      worksheet['!rows'] = rowHeights;
+      
+      // Add the worksheet to workbook
       XLSX.utils.book_append_sheet(workbook, worksheet, 'البيانات');
       
       // Generate filename with timestamp
@@ -177,57 +263,102 @@ const FormsAdminPage: React.FC = () => {
 
   const exportToPDF = (data: any[], filename: string, headers: string[], title: string) => {
     try {
-      const doc = new jsPDF();
+      // Create new PDF document
+      const doc = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+      });
       
-      // Add Arabic font support (you might need to add a proper Arabic font)
-      doc.setFont('helvetica');
-      doc.setFontSize(16);
-      doc.text(title, 105, 20, { align: 'center' });
+      // Set title
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      doc.text(title, doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
+      
+      // Add current date
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      const currentDate = new Date().toLocaleDateString('ar-EG');
+      doc.text(`تاريخ التقرير: ${currentDate}`, doc.internal.pageSize.getWidth() - 20, 30, { align: 'right' });
       
       // Prepare data for the table
       const tableData = data.map(item => {
         if (activeTab === 'government') {
           return [
-            item.entity_name,
-            item.entity_type,
-            item.governorate,
-            item.manager_name,
-            item.email,
-            item.phone_number,
-            getStatusText(item.status),
-            new Date(item.created_at).toLocaleDateString('ar-EG')
+            item.entity_name || '',
+            item.entity_type || '',
+            item.governorate || '',
+            item.manager_name || '',
+            item.email || '',
+            item.phone_number || '',
+            getStatusText(item.status) || '',
+            new Date(item.created_at).toLocaleDateString('ar-EG') || ''
           ];
         } else {
           return [
-            item.subject,
-            item.feedback_type,
-            item.full_name,
-            item.email,
-            item.related_entity,
-            getPriorityText(item.priority),
-            getStatusText(item.status),
-            new Date(item.created_at).toLocaleDateString('ar-EG')
+            item.subject || '',
+            item.feedback_type || '',
+            item.full_name || '',
+            item.email || '',
+            item.related_entity || '',
+            getPriorityText(item.priority) || '',
+            getStatusText(item.status) || '',
+            new Date(item.created_at).toLocaleDateString('ar-EG') || ''
           ];
         }
       });
 
-      // Add table
-      (doc as any).autoTable({
+      // Create table with autoTable using the imported function
+      autoTable(doc, {
         head: [headers],
         body: tableData,
-        startY: 30,
+        startY: 40,
+        theme: 'striped',
         styles: { 
-          fontSize: 10,
-          halign: 'center'
+          fontSize: 8,
+          halign: 'center',
+          cellPadding: 3,
+          lineColor: [128, 128, 128],
+          lineWidth: 0.1
         },
         headStyles: { 
-          fillColor: [66, 139, 202],
-          textColor: 255,
-          fontSize: 11
+          fillColor: [79, 70, 229],
+          textColor: [255, 255, 255],
+          fontSize: 9,
+          fontStyle: 'bold',
+          halign: 'center'
         },
-        alternateRowStyles: { fillColor: [245, 245, 245] },
-        margin: { top: 30 }
+        alternateRowStyles: { 
+          fillColor: [249, 250, 251] 
+        },
+        columnStyles: {
+          0: { cellWidth: 25 },
+          1: { cellWidth: 20 },
+          2: { cellWidth: 20 },
+          3: { cellWidth: 25 },
+          4: { cellWidth: 30 },
+          5: { cellWidth: 20 },
+          6: { cellWidth: 15 },
+          7: { cellWidth: 20 }
+        },
+        margin: { top: 40, left: 10, right: 10 },
+        tableLineColor: [128, 128, 128],
+        tableLineWidth: 0.1,
+        showHead: 'everyPage'
       });
+
+      // Add footer with page numbers
+      const pageCount = (doc as any).internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.text(
+          `الصفحة ${i} من ${pageCount}`,
+          doc.internal.pageSize.getWidth() / 2,
+          doc.internal.pageSize.getHeight() - 10,
+          { align: 'center' }
+        );
+      }
 
       // Generate filename with timestamp
       const timestamp = new Date().toISOString().split('T')[0];
@@ -255,14 +386,14 @@ const FormsAdminPage: React.FC = () => {
     ];
 
     const data = governmentEntities.map(entity => ({
-      entity_name: entity.entity_name,
-      entity_type: entity.entity_type,
-      governorate: entity.governorate,
-      manager_name: entity.manager_name,
-      email: entity.email,
-      phone_number: entity.phone_number,
-      status: getStatusText(entity.status),
-      created_at: new Date(entity.created_at).toLocaleDateString('ar-EG')
+      'اسم الجهة': entity.entity_name || 'غير محدد',
+      'نوع الجهة': entity.entity_type || 'غير محدد',
+      'المحافظة': entity.governorate || 'غير محدد',
+      'اسم المسؤول': entity.manager_name || 'غير محدد',
+      'البريد الإلكتروني': entity.email || 'غير محدد',
+      'رقم الهاتف': entity.phone_number || 'غير محدد',
+      'الحالة': getStatusText(entity.status),
+      'تاريخ التسجيل': new Date(entity.created_at).toLocaleDateString('ar-EG')
     }));
 
     if (format === 'excel') {
@@ -285,14 +416,14 @@ const FormsAdminPage: React.FC = () => {
     ];
 
     const data = citizenFeedback.map(feedback => ({
-      subject: feedback.subject,
-      feedback_type: feedback.feedback_type,
-      full_name: feedback.full_name,
-      email: feedback.email,
-      related_entity: feedback.related_entity,
-      priority: getPriorityText(feedback.priority),
-      status: getStatusText(feedback.status),
-      created_at: new Date(feedback.created_at).toLocaleDateString('ar-EG')
+      'الموضوع': feedback.subject || 'غير محدد',
+      'نوع الطلب': feedback.feedback_type || 'غير محدد',
+      'اسم المواطن': feedback.full_name || 'غير محدد',
+      'البريد الإلكتروني': feedback.email || 'غير محدد',
+      'الجهة المعنية': feedback.related_entity || 'غير محدد',
+      'الأولوية': getPriorityText(feedback.priority),
+      'الحالة': getStatusText(feedback.status),
+      'تاريخ الإرسال': new Date(feedback.created_at).toLocaleDateString('ar-EG')
     }));
 
     if (format === 'excel') {
@@ -470,7 +601,7 @@ const FormsAdminPage: React.FC = () => {
                   className="flex items-center space-x-2 rtl:space-x-reverse px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg"
                 >
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 11-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                    <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
                   </svg>
                   <span>تصدير PDF</span>
                 </button>

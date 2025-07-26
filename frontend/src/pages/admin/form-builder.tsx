@@ -71,9 +71,15 @@ const FormBuilderPage: React.FC = () => {
       return;
     }
 
+    // تنظيف الخيارات عند إضافة الحقل
+    const cleanedOptions = currentField.options
+      ? currentField.options.map(opt => opt.trim()).filter(opt => opt !== '')
+      : [];
+
     const newField: FormField = {
       ...currentField,
-      id: `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      id: `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      options: cleanedOptions.length > 0 ? cleanedOptions : undefined
     };
 
     setFormData(prev => ({
@@ -531,14 +537,30 @@ const FormBuilderPage: React.FC = () => {
                     </label>
                     <textarea
                       value={currentField.options?.join('\n') || ''}
-                      onChange={(e) => setCurrentField(prev => ({ 
-                        ...prev, 
-                        options: e.target.value.split('\n').filter(opt => opt.trim()) 
-                      }))}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        // لا نقوم بفلترة الخيارات الفارغة في الوقت الفعلي
+                        // بل نحتفظ بالنص كما هو لنسمح بإدخال أسطر جديدة
+                        setCurrentField(prev => ({ 
+                          ...prev, 
+                          options: value.split('\n')
+                        }));
+                      }}
+                      onKeyDown={(e) => {
+                        // منع إرسال النموذج عند الضغط على Enter
+                        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                          e.preventDefault();
+                          addField();
+                        }
+                      }}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       rows={4}
                       placeholder="الخيار الأول&#10;الخيار الثاني&#10;الخيار الثالث"
+                      style={{ resize: 'vertical', minHeight: '100px' }}
                     />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      اضغط Enter لإنشاء سطر جديد وإضافة خيار آخر • اضغط Ctrl+Enter لحفظ الحقل
+                    </p>
                   </div>
                 )}
 

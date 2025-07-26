@@ -4,6 +4,16 @@ import { useAuth } from '@/contexts/AuthContext';
 import ThemeToggle from '@/components/ThemeToggle';
 import toast from 'react-hot-toast';
 import apiClient from '@/lib/apiClient';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+
+// TypeScript declaration for jsPDF autoTable
+declare module 'jspdf' {
+  interface jsPDF {
+    autoTable: (options: any) => jsPDF;
+  }
+}
 
 interface GovernmentEntity {
   id: number;
@@ -140,6 +150,158 @@ const FormsAdminPage: React.FC = () => {
     }
   };
 
+  // Export functions
+  const exportToExcel = (data: any[], filename: string, headers: string[]) => {
+    try {
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      
+      // Set headers in Arabic
+      XLSX.utils.sheet_add_aoa(worksheet, [headers], { origin: 'A1' });
+      
+      // Add the workbook
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'البيانات');
+      
+      // Generate filename with timestamp
+      const timestamp = new Date().toISOString().split('T')[0];
+      const fullFilename = `${filename}_${timestamp}.xlsx`;
+      
+      // Save the file
+      XLSX.writeFile(workbook, fullFilename);
+      toast.success('تم تصدير البيانات إلى Excel بنجاح');
+    } catch (error) {
+      console.error('Error exporting to Excel:', error);
+      toast.error('حدث خطأ في تصدير البيانات إلى Excel');
+    }
+  };
+
+  const exportToPDF = (data: any[], filename: string, headers: string[], title: string) => {
+    try {
+      const doc = new jsPDF();
+      
+      // Add Arabic font support (you might need to add a proper Arabic font)
+      doc.setFont('helvetica');
+      doc.setFontSize(16);
+      doc.text(title, 105, 20, { align: 'center' });
+      
+      // Prepare data for the table
+      const tableData = data.map(item => {
+        if (activeTab === 'government') {
+          return [
+            item.entity_name,
+            item.entity_type,
+            item.governorate,
+            item.manager_name,
+            item.email,
+            item.phone_number,
+            getStatusText(item.status),
+            new Date(item.created_at).toLocaleDateString('ar-EG')
+          ];
+        } else {
+          return [
+            item.subject,
+            item.feedback_type,
+            item.full_name,
+            item.email,
+            item.related_entity,
+            getPriorityText(item.priority),
+            getStatusText(item.status),
+            new Date(item.created_at).toLocaleDateString('ar-EG')
+          ];
+        }
+      });
+
+      // Add table
+      (doc as any).autoTable({
+        head: [headers],
+        body: tableData,
+        startY: 30,
+        styles: { 
+          fontSize: 10,
+          halign: 'center'
+        },
+        headStyles: { 
+          fillColor: [66, 139, 202],
+          textColor: 255,
+          fontSize: 11
+        },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        margin: { top: 30 }
+      });
+
+      // Generate filename with timestamp
+      const timestamp = new Date().toISOString().split('T')[0];
+      const fullFilename = `${filename}_${timestamp}.pdf`;
+      
+      // Save the file
+      doc.save(fullFilename);
+      toast.success('تم تصدير البيانات إلى PDF بنجاح');
+    } catch (error) {
+      console.error('Error exporting to PDF:', error);
+      toast.error('حدث خطأ في تصدير البيانات إلى PDF');
+    }
+  };
+
+  const handleExportGovernmentEntities = (format: 'excel' | 'pdf') => {
+    const headers = [
+      'اسم الجهة',
+      'نوع الجهة', 
+      'المحافظة',
+      'اسم المسؤول',
+      'البريد الإلكتروني',
+      'رقم الهاتف',
+      'الحالة',
+      'تاريخ التسجيل'
+    ];
+
+    const data = governmentEntities.map(entity => ({
+      entity_name: entity.entity_name,
+      entity_type: entity.entity_type,
+      governorate: entity.governorate,
+      manager_name: entity.manager_name,
+      email: entity.email,
+      phone_number: entity.phone_number,
+      status: getStatusText(entity.status),
+      created_at: new Date(entity.created_at).toLocaleDateString('ar-EG')
+    }));
+
+    if (format === 'excel') {
+      exportToExcel(data, 'الجهات_الحكومية', headers);
+    } else {
+      exportToPDF(governmentEntities, 'الجهات_الحكومية', headers, 'تقرير الجهات الحكومية');
+    }
+  };
+
+  const handleExportCitizenFeedback = (format: 'excel' | 'pdf') => {
+    const headers = [
+      'الموضوع',
+      'نوع الطلب',
+      'اسم المواطن',
+      'البريد الإلكتروني',
+      'الجهة المعنية',
+      'الأولوية',
+      'الحالة',
+      'تاريخ الإرسال'
+    ];
+
+    const data = citizenFeedback.map(feedback => ({
+      subject: feedback.subject,
+      feedback_type: feedback.feedback_type,
+      full_name: feedback.full_name,
+      email: feedback.email,
+      related_entity: feedback.related_entity,
+      priority: getPriorityText(feedback.priority),
+      status: getStatusText(feedback.status),
+      created_at: new Date(feedback.created_at).toLocaleDateString('ar-EG')
+    }));
+
+    if (format === 'excel') {
+      exportToExcel(data, 'اقتراحات_المواطنين', headers);
+    } else {
+      exportToPDF(citizenFeedback, 'اقتراحات_المواطنين', headers, 'تقرير اقتراحات وشكاوى المواطنين');
+    }
+  };
+
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
@@ -266,27 +428,54 @@ const FormsAdminPage: React.FC = () => {
 
         {/* Tabs */}
         <div className="glass rounded-2xl p-6 shadow-lg mb-8">
-          <div className="flex space-x-1 rtl:space-x-reverse bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
-            <button
-              onClick={() => setActiveTab('government')}
-              className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
-                activeTab === 'government'
-                  ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-md'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-              }`}
-            >
-              الجهات الحكومية ({governmentEntities.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('citizen')}
-              className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
-                activeTab === 'citizen'
-                  ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-md'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-              }`}
-            >
-              اقتراحات المواطنين ({citizenFeedback.length})
-            </button>
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="flex space-x-1 rtl:space-x-reverse bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
+              <button
+                onClick={() => setActiveTab('government')}
+                className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+                  activeTab === 'government'
+                    ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-md'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                }`}
+              >
+                الجهات الحكومية ({governmentEntities.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('citizen')}
+                className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+                  activeTab === 'citizen'
+                    ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-md'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                }`}
+              >
+                اقتراحات المواطنين ({citizenFeedback.length})
+              </button>
+            </div>
+            
+            {/* Export Buttons */}
+            <div className="flex space-x-2 rtl:space-x-reverse">
+              <div className="flex items-center space-x-1 rtl:space-x-reverse bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
+                <button
+                  onClick={() => activeTab === 'government' ? handleExportGovernmentEntities('excel') : handleExportCitizenFeedback('excel')}
+                  className="flex items-center space-x-2 rtl:space-x-reverse px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg"
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                  <span>تصدير Excel</span>
+                </button>
+                
+                <button
+                  onClick={() => activeTab === 'government' ? handleExportGovernmentEntities('pdf') : handleExportCitizenFeedback('pdf')}
+                  className="flex items-center space-x-2 rtl:space-x-reverse px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg"
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 11-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                  </svg>
+                  <span>تصدير PDF</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 

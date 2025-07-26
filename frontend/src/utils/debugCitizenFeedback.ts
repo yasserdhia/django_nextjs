@@ -143,8 +143,11 @@ export function convertFieldNamesForDjango(data: CitizenFeedbackFormData): Recor
   return convertedData;
 }
 
-export default {
+// Create named export object
+const debugCitizenFeedbackUtils = {
   validateCitizenFeedbackData,
   debugCitizenFeedbackData,
   convertFieldNamesForDjango
 };
+
+export default debugCitizenFeedbackUtils;

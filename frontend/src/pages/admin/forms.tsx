@@ -156,206 +156,412 @@ const FormsAdminPage: React.FC = () => {
       // Create workbook and worksheet
       const workbook = XLSX.utils.book_new();
       
-      // Prepare data with headers - use Arabic keys for better formatting
+      // Add title row
+      const timestamp = new Date().toLocaleDateString('ar-SA');
+      const titleRow = [`تقرير ${filename} - ${timestamp}`];
+      const emptyRow = [''];
+      
+      // Prepare data with enhanced formatting
       const worksheetData = [
+        titleRow,
+        emptyRow,
         headers,
         ...data.map(item => Object.values(item))
       ];
       
       const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
       
-      // Calculate column widths based on content
+      // Enhanced column width calculation
       const colWidths = headers.map((header, index) => {
         const headerLength = header.length;
         const maxDataLength = Math.max(...data.map(row => {
           const value = Object.values(row)[index];
           return value ? String(value).length : 0;
         }));
-        return { wch: Math.max(headerLength + 2, maxDataLength + 2, 12) };
+        // Provide more space for Arabic text
+        return { wch: Math.max(headerLength + 4, maxDataLength + 4, 15) };
       });
       worksheet['!cols'] = colWidths;
       
       // Get range for styling
       const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
       
-      // Style the header row with beautiful formatting
-      for (let col = range.s.c; col <= range.e.c; col++) {
-        const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
-        if (!worksheet[cellAddress]) continue;
-        
-        worksheet[cellAddress].s = {
+      // Style the title row (merged across all columns)
+      const titleCell = worksheet['A1'];
+      if (titleCell) {
+        titleCell.s = {
           font: { 
             bold: true, 
-            color: { rgb: "FFFFFF" },
-            size: 12
-          },
-          fill: { 
-            fgColor: { rgb: "4F46E5" } 
+            size: 16, 
+            color: { rgb: "1E40AF" } // Blue color
           },
           alignment: { 
             horizontal: "center", 
-            vertical: "center",
-            wrapText: true
+            vertical: "center" 
+          },
+          fill: { 
+            fgColor: { rgb: "F8FAFC" } // Light blue background
           },
           border: {
-            top: { style: "medium", color: { rgb: "000000" } },
-            bottom: { style: "medium", color: { rgb: "000000" } },
-            left: { style: "medium", color: { rgb: "000000" } },
-            right: { style: "medium", color: { rgb: "000000" } }
+            top: { style: "thin", color: { rgb: "CBD5E1" } },
+            bottom: { style: "thin", color: { rgb: "CBD5E1" } },
+            left: { style: "thin", color: { rgb: "CBD5E1" } },
+            right: { style: "thin", color: { rgb: "CBD5E1" } }
           }
         };
       }
       
-      // Style data rows with alternating colors
-      for (let row = 1; row <= data.length; row++) {
-        for (let col = range.s.c; col <= range.e.c; col++) {
-          const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
-          if (!worksheet[cellAddress]) continue;
-          
-          const isEvenRow = row % 2 === 0;
-          worksheet[cellAddress].s = {
+      // Merge title across all columns
+      const mergeRange = {
+        s: { c: 0, r: 0 },
+        e: { c: headers.length - 1, r: 0 }
+      };
+      worksheet['!merges'] = [mergeRange];
+      
+      // Style header row (row 3, 0-indexed as row 2)
+      for (let col = 0; col <= range.e.c; col++) {
+        const cellAddress = XLSX.utils.encode_cell({ c: col, r: 2 });
+        const cell = worksheet[cellAddress];
+        if (cell) {
+          cell.s = {
+            font: { 
+              bold: true, 
+              size: 12,
+              color: { rgb: "FFFFFF" }
+            },
             alignment: { 
               horizontal: "center", 
               vertical: "center",
-              wrapText: true
-            },
-            border: {
-              top: { style: "thin", color: { rgb: "D1D5DB" } },
-              bottom: { style: "thin", color: { rgb: "D1D5DB" } },
-              left: { style: "thin", color: { rgb: "D1D5DB" } },
-              right: { style: "thin", color: { rgb: "D1D5DB" } }
+              wrapText: true 
             },
             fill: { 
-              fgColor: { 
-                rgb: isEvenRow ? "F3F4F6" : "FFFFFF" 
-              } 
+              fgColor: { rgb: "1E40AF" } // Blue header background
             },
-            font: {
-              size: 11,
-              color: { rgb: "374151" }
+            border: {
+              top: { style: "thin", color: { rgb: "FFFFFF" } },
+              bottom: { style: "thin", color: { rgb: "FFFFFF" } },
+              left: { style: "thin", color: { rgb: "FFFFFF" } },
+              right: { style: "thin", color: { rgb: "FFFFFF" } }
             }
           };
         }
       }
       
-      // Set row heights
-      const rowHeights = [];
-      for (let i = 0; i <= data.length; i++) {
-        rowHeights[i] = { hpx: i === 0 ? 25 : 20 }; // Header row taller
+      // Style data rows with alternating colors
+      for (let row = 3; row <= range.e.r; row++) {
+        const isEvenRow = (row - 3) % 2 === 0;
+        const fillColor = isEvenRow ? "FFFFFF" : "F8FAFC";
+        
+        for (let col = 0; col <= range.e.c; col++) {
+          const cellAddress = XLSX.utils.encode_cell({ c: col, r: row });
+          const cell = worksheet[cellAddress];
+          if (cell) {
+            cell.s = {
+              alignment: { 
+                horizontal: "center", 
+                vertical: "center",
+                wrapText: true 
+              },
+              fill: { 
+                fgColor: { rgb: fillColor }
+              },
+              border: {
+                top: { style: "thin", color: { rgb: "E2E8F0" } },
+                bottom: { style: "thin", color: { rgb: "E2E8F0" } },
+                left: { style: "thin", color: { rgb: "E2E8F0" } },
+                right: { style: "thin", color: { rgb: "E2E8F0" } }
+              },
+              font: {
+                size: 11
+              }
+            };
+          }
+        }
       }
-      worksheet['!rows'] = rowHeights;
       
-      // Add the worksheet to workbook
+      // Set row heights for better readability
+      const rowHeights: any = {};
+      rowHeights[0] = { hpt: 30 }; // Title row
+      rowHeights[2] = { hpt: 25 }; // Header row
+      for (let i = 3; i <= range.e.r; i++) {
+        rowHeights[i] = { hpt: 20 }; // Data rows
+      }
+      worksheet['!rows'] = Object.keys(rowHeights).map(key => rowHeights[key]);
+      
+      // Add worksheet to workbook
       XLSX.utils.book_append_sheet(workbook, worksheet, 'البيانات');
       
       // Generate filename with timestamp
-      const timestamp = new Date().toISOString().split('T')[0];
-      const fullFilename = `${filename}_${timestamp}.xlsx`;
+      const timestamp_file = new Date().toISOString().split('T')[0];
+      const fullFilename = `${filename}_${timestamp_file}.xlsx`;
       
-      // Save the file
+      // Write file
       XLSX.writeFile(workbook, fullFilename);
-      toast.success('تم تصدير البيانات إلى Excel بنجاح');
+      
+      toast.success('تم تصدير الملف بنجاح!');
     } catch (error) {
-      console.error('Error exporting to Excel:', error);
-      toast.error('حدث خطأ في تصدير البيانات إلى Excel');
+      console.error('Export error:', error);
+      toast.error('حدث خطأ في التصدير');
     }
   };
 
   const exportToPDF = (data: any[], filename: string, headers: string[], title: string) => {
     try {
-      // Create new PDF document
+      /* 
+       * حل شامل لمشكلة عرض النص العربي في PDF:
+       * 1. ترجمة كاملة للمصطلحات العربية إلى الإنجليزية
+       * 2. استبدال الأرقام العربية بالإنجليزية
+       * 3. تحويل الأحرف العربية المتبقية إلى حروف لاتينية
+       * 4. الحفاظ على النصوص الإنجليزية والأرقام كما هي
+       * هذا الحل يضمن عرض صحيح ومقروء للنص في ملف PDF
+       * 
+       * ملاحظة: مكتبة jsPDF لا تدعم النص العربي بشكل أصلي
+       * لذلك نقوم بترجمة المحتوى للإنجليزية لضمان القراءة الصحيحة
+       */
+      
+      // Create new PDF document with RTL support
       const doc = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
         format: 'a4'
       });
       
-      // Set title
-      doc.setFontSize(18);
-      doc.setFont('helvetica', 'bold');
-      doc.text(title, doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
+      // Function to convert Arabic text to English for PDF compatibility
+      const fixArabicText = (text: string): string => {
+        if (!text) return '';
+        
+        // Replace Arabic numerals with English ones
+        let fixedText = text
+          .replace(/٠/g, '0').replace(/١/g, '1').replace(/٢/g, '2')
+          .replace(/٣/g, '3').replace(/٤/g, '4').replace(/٥/g, '5')
+          .replace(/٦/g, '6').replace(/٧/g, '7').replace(/٨/g, '8').replace(/٩/g, '9');
+        
+        // Comprehensive Arabic to English translations
+        const arabicReplacements: { [key: string]: string } = {
+          // Status translations
+          'قيد المراجعة': 'Under Review',
+          'موافق عليه': 'Approved',
+          'مرفوض': 'Rejected',
+          'غير محدد': 'Not Specified',
+          'فعال': 'Active',
+          'غير فعال': 'Inactive',
+          'معلق': 'Pending',
+          'مكتمل': 'Completed',
+          'مقبول': 'Accepted',
+          
+          // Priority translations
+          'عاجل': 'Urgent',
+          'عالي': 'High',
+          'متوسط': 'Medium',
+          'منخفض': 'Low',
+          'عالية': 'High',
+          'متوسطة': 'Medium',
+          'منخفضة': 'Low',
+          
+          // Entity types
+          'وزارة': 'Ministry',
+          'هيئة': 'Authority',
+          'مؤسسة': 'Institution',
+          'دائرة': 'Department',
+          'مديرية': 'Directorate',
+          'جامعة': 'University',
+          'مستشفى': 'Hospital',
+          'مدرسة': 'School',
+          
+          // Governorates
+          'بغداد': 'Baghdad',
+          'البصرة': 'Basra',
+          'النجف': 'Najaf',
+          'كربلاء': 'Karbala',
+          'الموصل': 'Mosul',
+          'أربيل': 'Erbil',
+          'السليمانية': 'Sulaymaniyah',
+          'ديالى': 'Diyala',
+          'الأنبار': 'Anbar',
+          'صلاح الدين': 'Salah al-Din',
+          'كركوك': 'Kirkuk',
+          'نينوى': 'Nineveh',
+          'واسط': 'Wasit',
+          'ميسان': 'Maysan',
+          'ذي قار': 'Dhi Qar',
+          'القادسية': 'Al-Qadisiyyah',
+          'بابل': 'Babylon',
+          'المثنى': 'Al-Muthanna',
+          'دهوك': 'Dohuk',
+          
+          // Headers and common terms
+          'تقرير الجهات الحكومية': 'Government Entities Report',
+          'تقرير اقتراحات وشكاوى المواطنين': 'Citizens Feedback Report',
+          'اسم الجهة': 'Entity Name',
+          'نوع الجهة': 'Entity Type',
+          'المحافظة': 'Governorate',
+          'اسم المسؤول': 'Manager Name',
+          'البريد الإلكتروني': 'Email',
+          'رقم الهاتف': 'Phone Number',
+          'الحالة': 'Status',
+          'تاريخ التسجيل': 'Registration Date',
+          'الموضوع': 'Subject',
+          'نوع الطلب': 'Request Type',
+          'اسم المواطن': 'Citizen Name',
+          'الجهة المعنية': 'Related Entity',
+          'الأولوية': 'Priority',
+          'تاريخ الإرسال': 'Submission Date',
+          'تاريخ التقرير': 'Report Date',
+          'الصفحة': 'Page',
+          'من': 'of',
+          'الأمانة العامة لمجلس الوزراء - نظام إدارة الاستمارات': 'General Secretariat of Council of Ministers - Forms Management System'
+        };
+        
+        // Apply exact replacements first
+        Object.keys(arabicReplacements).forEach(arabic => {
+          const english = arabicReplacements[arabic];
+          fixedText = fixedText.replace(new RegExp(arabic, 'g'), english);
+        });
+        
+        // If text still contains Arabic characters, apply character-level transliteration
+        if (/[\u0600-\u06FF]/.test(fixedText)) {
+          // For remaining Arabic text, use transliteration
+          const arabicToLatin: { [key: string]: string } = {
+            'ا': 'a', 'ب': 'b', 'ت': 't', 'ث': 'th', 'ج': 'j', 'ح': 'h',
+            'خ': 'kh', 'د': 'd', 'ذ': 'dh', 'ر': 'r', 'ز': 'z', 'س': 's',
+            'ش': 'sh', 'ص': 's', 'ض': 'd', 'ط': 't', 'ظ': 'z', 'ع': 'a',
+            'غ': 'gh', 'ف': 'f', 'ق': 'q', 'ك': 'k', 'ل': 'l', 'م': 'm',
+            'ن': 'n', 'ه': 'h', 'و': 'w', 'ي': 'y', 'ة': 'h', 'ى': 'a',
+            'ئ': 'e', 'ء': 'a', 'أ': 'a', 'إ': 'i', 'آ': 'aa', 'ؤ': 'o'
+          };
+          
+          fixedText = fixedText.split('').map(char => {
+            return arabicToLatin[char] || char;
+          }).join('');
+        }
+        
+        return fixedText;
+      };
       
-      // Add current date
+      // Set title with Arabic text handling
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      const fixedTitle = fixArabicText(title);
+      doc.text(fixedTitle, doc.internal.pageSize.getWidth() / 2, 20, { 
+        align: 'center'
+      });
+      
+      // Add current date in Arabic
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
-      const currentDate = new Date().toLocaleDateString('ar-EG');
-      doc.text(`تاريخ التقرير: ${currentDate}`, doc.internal.pageSize.getWidth() - 20, 30, { align: 'right' });
+      const currentDate = new Date().toLocaleDateString('en-US');
+      const dateText = `تاريخ التقرير: ${currentDate}`;
+      doc.text(fixArabicText(dateText), doc.internal.pageSize.getWidth() - 20, 30, { 
+        align: 'right'
+      });
       
-      // Prepare data for the table
+      // Prepare headers with fixed Arabic text
+      const fixedHeaders = headers.map(header => fixArabicText(header));
+      
+      // Prepare data for the table with proper Arabic text handling
       const tableData = data.map(item => {
         if (activeTab === 'government') {
           return [
-            item.entity_name || '',
-            item.entity_type || '',
-            item.governorate || '',
-            item.manager_name || '',
-            item.email || '',
-            item.phone_number || '',
-            getStatusText(item.status) || '',
-            new Date(item.created_at).toLocaleDateString('ar-EG') || ''
+            fixArabicText(item.entity_name || 'غير محدد'),
+            fixArabicText(item.entity_type || 'غير محدد'),
+            fixArabicText(item.governorate || 'غير محدد'),
+            fixArabicText(item.manager_name || 'غير محدد'),
+            item.email || 'غير محدد', // Keep email as is
+            item.phone_number || 'غير محدد', // Keep phone as is
+            fixArabicText(getStatusText(item.status) || 'غير محدد'),
+            new Date(item.created_at).toLocaleDateString('en-US') || 'غير محدد'
           ];
         } else {
           return [
-            item.subject || '',
-            item.feedback_type || '',
-            item.full_name || '',
-            item.email || '',
-            item.related_entity || '',
-            getPriorityText(item.priority) || '',
-            getStatusText(item.status) || '',
-            new Date(item.created_at).toLocaleDateString('ar-EG') || ''
+            fixArabicText(item.subject || 'غير محدد'),
+            fixArabicText(item.feedback_type || 'غير محدد'),
+            fixArabicText(item.full_name || 'غير محدد'),
+            item.email || 'غير محدد', // Keep email as is
+            fixArabicText(item.related_entity || 'غير محدد'),
+            fixArabicText(getPriorityText(item.priority) || 'غير محدد'),
+            fixArabicText(getStatusText(item.status) || 'غير محدد'),
+            new Date(item.created_at).toLocaleDateString('en-US') || 'غير محدد'
           ];
         }
       });
 
-      // Create table with autoTable using the imported function
+      // Create table with autoTable using improved Arabic support
       autoTable(doc, {
-        head: [headers],
+        head: [fixedHeaders],
         body: tableData,
         startY: 40,
-        theme: 'striped',
+        theme: 'grid',
         styles: { 
-          fontSize: 8,
+          fontSize: 10,
           halign: 'center',
-          cellPadding: 3,
-          lineColor: [128, 128, 128],
-          lineWidth: 0.1
+          cellPadding: 5,
+          lineColor: [100, 100, 100],
+          lineWidth: 0.3,
+          font: 'helvetica',
+          textColor: [40, 40, 40],
+          fillColor: [255, 255, 255]
         },
         headStyles: { 
-          fillColor: [79, 70, 229],
+          fillColor: [30, 64, 175], // Blue background
           textColor: [255, 255, 255],
-          fontSize: 9,
+          fontSize: 11,
           fontStyle: 'bold',
-          halign: 'center'
+          halign: 'center',
+          cellPadding: 6,
+          minCellHeight: 12
         },
         alternateRowStyles: { 
-          fillColor: [249, 250, 251] 
+          fillColor: [248, 250, 252] 
         },
         columnStyles: {
-          0: { cellWidth: 25 },
-          1: { cellWidth: 20 },
-          2: { cellWidth: 20 },
-          3: { cellWidth: 25 },
-          4: { cellWidth: 30 },
-          5: { cellWidth: 20 },
-          6: { cellWidth: 15 },
-          7: { cellWidth: 20 }
+          0: { cellWidth: 32, halign: 'center' },
+          1: { cellWidth: 28, halign: 'center' },
+          2: { cellWidth: 25, halign: 'center' },
+          3: { cellWidth: 32, halign: 'center' },
+          4: { cellWidth: 38, halign: 'center' },
+          5: { cellWidth: 28, halign: 'center' },
+          6: { cellWidth: 22, halign: 'center' },
+          7: { cellWidth: 25, halign: 'center' }
         },
-        margin: { top: 40, left: 10, right: 10 },
-        tableLineColor: [128, 128, 128],
-        tableLineWidth: 0.1,
-        showHead: 'everyPage'
+        margin: { top: 40, left: 12, right: 12 },
+        tableLineColor: [100, 100, 100],
+        tableLineWidth: 0.3,
+        showHead: 'everyPage',
+        didDrawPage: function (data) {
+          // Add professional border around the table
+          if (data.cursor) {
+            doc.setDrawColor(30, 64, 175); // Blue border
+            doc.setLineWidth(1);
+            doc.rect(data.settings.margin.left - 2, data.settings.startY - 2, 
+                     doc.internal.pageSize.getWidth() - data.settings.margin.left - data.settings.margin.right + 4, 
+                     data.cursor.y - data.settings.startY + 4);
+          }
+        }
       });
 
-      // Add footer with page numbers
+      // Add footer with page numbers and Arabic text
       const pageCount = (doc as any).internal.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
-        doc.setFontSize(8);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        
+        // Page number in Arabic (fixed)
+        const pageText = fixArabicText(`الصفحة ${i} من ${pageCount}`);
         doc.text(
-          `الصفحة ${i} من ${pageCount}`,
+          pageText,
           doc.internal.pageSize.getWidth() / 2,
           doc.internal.pageSize.getHeight() - 10,
+          { align: 'center' }
+        );
+        
+        // Organization name in footer (fixed Arabic)
+        doc.setFontSize(8);
+        const orgText = fixArabicText('الأمانة العامة لمجلس الوزراء - نظام إدارة الاستمارات');
+        doc.text(
+          orgText,
+          doc.internal.pageSize.getWidth() / 2,
+          doc.internal.pageSize.getHeight() - 5,
           { align: 'center' }
         );
       }
@@ -364,9 +570,9 @@ const FormsAdminPage: React.FC = () => {
       const timestamp = new Date().toISOString().split('T')[0];
       const fullFilename = `${filename}_${timestamp}.pdf`;
       
-      // Save the file
+      // Save the file with comprehensive Arabic-to-English translation
       doc.save(fullFilename);
-      toast.success('تم تصدير البيانات إلى PDF بنجاح');
+      toast.success('تم تصدير PDF بنجاح! تم تحويل النصوص العربية إلى الإنجليزية لضمان القراءة الصحيحة');
     } catch (error) {
       console.error('Error exporting to PDF:', error);
       toast.error('حدث خطأ في تصدير البيانات إلى PDF');
@@ -598,7 +804,7 @@ const FormsAdminPage: React.FC = () => {
                 
                 <button
                   onClick={() => activeTab === 'government' ? handleExportGovernmentEntities('pdf') : handleExportCitizenFeedback('pdf')}
-                  className="flex items-center space-x-2 rtl:space-x-reverse px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg"
+                  className="flex items-center space-x-2 rtl:space-x-reverse px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg"
                 >
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />

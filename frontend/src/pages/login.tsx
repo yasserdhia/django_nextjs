@@ -172,7 +172,7 @@ const LoginPage: React.FC = () => {
           {/* Footer */}
           <div className="mt-8 text-center">
             <p className="text-gray-600 dark:text-gray-400">
-              Don't have an account?{' '}
+              Don&apos;t have an account?{' '}
               <Link href="/register" className="text-blue-600 dark:text-blue-400 font-semibold hover:text-blue-700 dark:hover:text-blue-300 transition-colors duration-200">
                 Sign up here
               </Link>

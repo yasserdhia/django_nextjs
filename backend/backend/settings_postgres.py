@@ -26,8 +26,9 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'corsheaders',
     'djoser',
-    'accounts',
-    'forms',
+    'accounts.apps.AccountsConfig',
+    'forms.apps.FormsConfig',
+    'custom_forms.apps.CustomFormsConfig',
 ]
 
 MIDDLEWARE = [

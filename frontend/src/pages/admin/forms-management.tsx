@@ -61,7 +61,7 @@ const FormsManagementPage: React.FC = () => {
   const fetchForms = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get('/api/forms/manage/');
+      const response = await apiClient.get('/api/custom-forms/manage/');
       setForms(response.data);
     } catch (error) {
       console.error('Error fetching forms:', error);
@@ -73,7 +73,7 @@ const FormsManagementPage: React.FC = () => {
 
   const toggleFormStatus = async (formId: number, newStatus: boolean) => {
     try {
-      await apiClient.patch(`/api/forms/manage/${formId}/`, {
+      await apiClient.patch(`/api/custom-forms/manage/${formId}/`, {
         is_active: newStatus
       });
       
@@ -94,7 +94,7 @@ const FormsManagementPage: React.FC = () => {
     }
 
     try {
-      await apiClient.delete(`/api/forms/manage/${formId}/`);
+      await apiClient.delete(`/api/custom-forms/manage/${formId}/`);
       setForms(prev => prev.filter(form => form.id !== formId));
       toast.success('تم حذف الاستمارة بنجاح');
     } catch (error) {
@@ -109,7 +109,7 @@ const FormsManagementPage: React.FC = () => {
       setSelectedForm(form);
       setShowResponsesModal(true);
       
-      const response = await apiClient.get(`/api/forms/responses/${form.id}/`);
+      const response = await apiClient.get(`/api/custom-forms/responses/${form.id}/`);
       setFormResponses(response.data);
     } catch (error) {
       console.error('Error fetching form responses:', error);
@@ -122,7 +122,7 @@ const FormsManagementPage: React.FC = () => {
 
   const duplicateForm = async (form: CustomForm) => {
     try {
-      const response = await apiClient.post(`/api/forms/duplicate/${form.id}/`);
+      const response = await apiClient.post(`/api/custom-forms/duplicate/${form.id}/`);
       toast.success('تم نسخ الاستمارة بنجاح');
       fetchForms(); // Refresh the list
     } catch (error) {
@@ -133,7 +133,7 @@ const FormsManagementPage: React.FC = () => {
 
   const exportResponses = async (formId: number, format: 'excel' | 'pdf') => {
     try {
-      const response = await apiClient.get(`/api/forms/export/${formId}/${format}/`, {
+      const response = await apiClient.get(`/api/custom-forms/export/${formId}/${format}/`, {
         responseType: 'blob'
       });
       

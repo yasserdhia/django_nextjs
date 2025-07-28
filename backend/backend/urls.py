@@ -7,6 +7,6 @@ urlpatterns = [
     path('api/auth/', include('djoser.urls.jwt')),
     path('api/auth/', include('djoser.urls.authtoken')),
     path('api/', include('accounts.urls')),
-    path('api/forms/', include('custom_forms.urls')),
+    path('api/custom-forms/', include('custom_forms.urls')),
     path('', include('forms.urls')),
 ]

@@ -259,113 +259,109 @@ class FormSubmissionViewSet(viewsets.ModelViewSet):
         
         return queryset
 
-class DashboardViewSet(viewsets.ViewSet):
-    """ViewSet لإحصائيات لوحة الإدارة"""
-    permission_classes = [permissions.IsAuthenticated]
+@action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
+def dashboard_stats(request):
+    """إحصائيات شاملة للوحة الإدارة"""
     
-    @action(detail=False, methods=['get'])
-    def stats(self, request):
-        """إحصائيات شاملة للوحة الإدارة"""
+    # إحصائيات الكيانات الحكومية
+    try:
+        from django.db import connection
         
-        # إحصائيات الكيانات الحكومية
-        try:
-            from django.db import connection
+        with connection.cursor() as cursor:
+            # إحصائيات حسب النوع
+            cursor.execute("""
+                SELECT entity_type, COUNT(*) as count 
+                FROM forms_governmententity 
+                WHERE entity_type IS NOT NULL 
+                GROUP BY entity_type
+            """)
+            entities_by_type = dict(cursor.fetchall())
             
-            with connection.cursor() as cursor:
-                # إحصائيات حسب النوع
-                cursor.execute("""
-                    SELECT entity_type, COUNT(*) as count 
-                    FROM forms_governmententity 
-                    WHERE entity_type IS NOT NULL 
-                    GROUP BY entity_type
-                """)
-                entities_by_type = dict(cursor.fetchall())
-                
-                # إحصائيات حسب المحافظة
-                cursor.execute("""
-                    SELECT governorate, COUNT(*) as count 
-                    FROM forms_governmententity 
-                    WHERE governorate IS NOT NULL 
-                    GROUP BY governorate
-                """)
-                entities_by_governorate = dict(cursor.fetchall())
-            
-            gov_entities_stats = {
-                'total_entities': GovernmentEntity.objects.count(),
-                'approved_entities': GovernmentEntity.objects.filter(is_approved=True).count(),
-                'pending_entities': GovernmentEntity.objects.filter(is_approved=False).count(),
-                'entities_by_type': entities_by_type,
-                'entities_by_governorate': entities_by_governorate,
-                'recent_submissions': GovernmentEntity.objects.filter(
-                    created_at__gte=timezone.now() - timedelta(days=30)
-                ).count(),
-            }
-        except Exception:
-            # في حالة فشل الاستعلام، استخدم قيم افتراضية
-            gov_entities_stats = {
-                'total_entities': GovernmentEntity.objects.count(),
-                'approved_entities': GovernmentEntity.objects.filter(is_approved=True).count(),
-                'pending_entities': GovernmentEntity.objects.filter(is_approved=False).count(),
-                'entities_by_type': {},
-                'entities_by_governorate': {},
-                'recent_submissions': 0,
-            }
+            # إحصائيات حسب المحافظة
+            cursor.execute("""
+                SELECT governorate, COUNT(*) as count 
+                FROM forms_governmententity 
+                WHERE governorate IS NOT NULL 
+                GROUP BY governorate
+            """)
+            entities_by_governorate = dict(cursor.fetchall())
         
-        # إحصائيات ملاحظات المواطنين
-        try:
-            # استخدام raw SQL لتجنب مشاكل GROUP BY في SQL Server
-            from django.db import connection
-            
-            with connection.cursor() as cursor:
-                # إحصائيات حسب النوع
-                cursor.execute("""
-                    SELECT feedback_type, COUNT(*) as count 
-                    FROM forms_citizenfeedback 
-                    WHERE feedback_type IS NOT NULL 
-                    GROUP BY feedback_type
-                """)
-                feedback_by_type = dict(cursor.fetchall())
-                
-                # إحصائيات حسب الأولوية
-                cursor.execute("""
-                    SELECT priority, COUNT(*) as count 
-                    FROM forms_citizenfeedback 
-                    WHERE priority IS NOT NULL 
-                    GROUP BY priority
-                """)
-                feedback_by_priority = dict(cursor.fetchall())
-            
-            citizen_feedback_stats = {
-                'total_feedback': CitizenFeedback.objects.count(),
-                'pending_feedback': CitizenFeedback.objects.filter(status='pending').count(),
-                'resolved_feedback': CitizenFeedback.objects.filter(status='resolved').count(),
-                'feedback_by_type': feedback_by_type,
-                'feedback_by_priority': feedback_by_priority,
-                'recent_feedback': CitizenFeedback.objects.filter(
-                    created_at__gte=timezone.now() - timedelta(days=30)
-                ).count(),
-            }
-        except Exception:
-            # في حالة فشل الاستعلام، استخدم قيم افتراضية
-            citizen_feedback_stats = {
-                'total_feedback': CitizenFeedback.objects.count(),
-                'pending_feedback': CitizenFeedback.objects.filter(status='pending').count(),
-                'resolved_feedback': CitizenFeedback.objects.filter(status='resolved').count(),
-                'feedback_by_type': {},
-                'feedback_by_priority': {},
-                'recent_feedback': 0,
-            }
-        
-        # إحصائيات عامة
-        total_submissions = FormSubmission.objects.count()
-        active_users = User.objects.filter(is_active=True).count()
-        
-        stats = {
-            'government_entities': gov_entities_stats,
-            'citizen_feedback': citizen_feedback_stats,
-            'total_submissions': total_submissions,
-            'active_users': active_users,
+        gov_entities_stats = {
+            'total_entities': GovernmentEntity.objects.count(),
+            'approved_entities': GovernmentEntity.objects.filter(is_approved=True).count(),
+            'pending_entities': GovernmentEntity.objects.filter(is_approved=False).count(),
+            'entities_by_type': entities_by_type,
+            'entities_by_governorate': entities_by_governorate,
+            'recent_submissions': GovernmentEntity.objects.filter(
+                created_at__gte=timezone.now() - timedelta(days=30)
+            ).count(),
         }
+    except Exception:
+        # في حالة فشل الاستعلام، استخدم قيم افتراضية
+        gov_entities_stats = {
+            'total_entities': GovernmentEntity.objects.count(),
+            'approved_entities': GovernmentEntity.objects.filter(is_approved=True).count(),
+            'pending_entities': GovernmentEntity.objects.filter(is_approved=False).count(),
+            'entities_by_type': {},
+            'entities_by_governorate': {},
+            'recent_submissions': 0,
+        }
+    
+    # إحصائيات ملاحظات المواطنين
+    try:
+        # استخدام raw SQL لتجنب مشاكل GROUP BY في SQL Server
+        from django.db import connection
         
-        serializer = DashboardStatsSerializer(stats)
-        return Response(serializer.data)
+        with connection.cursor() as cursor:
+            # إحصائيات حسب النوع
+            cursor.execute("""
+                SELECT feedback_type, COUNT(*) as count 
+                FROM forms_citizenfeedback 
+                WHERE feedback_type IS NOT NULL 
+                GROUP BY feedback_type
+            """)
+            feedback_by_type = dict(cursor.fetchall())
+            
+            # إحصائيات حسب الأولوية
+            cursor.execute("""
+                SELECT priority, COUNT(*) as count 
+                FROM forms_citizenfeedback 
+                WHERE priority IS NOT NULL 
+                GROUP BY priority
+            """)
+            feedback_by_priority = dict(cursor.fetchall())
+        
+        citizen_feedback_stats = {
+            'total_feedback': CitizenFeedback.objects.count(),
+            'pending_feedback': CitizenFeedback.objects.filter(status='pending').count(),
+            'resolved_feedback': CitizenFeedback.objects.filter(status='resolved').count(),
+            'feedback_by_type': feedback_by_type,
+            'feedback_by_priority': feedback_by_priority,
+            'recent_feedback': CitizenFeedback.objects.filter(
+                created_at__gte=timezone.now() - timedelta(days=30)
+            ).count(),
+        }
+    except Exception:
+        # في حالة فشل الاستعلام، استخدم قيم افتراضية
+        citizen_feedback_stats = {
+            'total_feedback': CitizenFeedback.objects.count(),
+            'pending_feedback': CitizenFeedback.objects.filter(status='pending').count(),
+            'resolved_feedback': CitizenFeedback.objects.filter(status='resolved').count(),
+            'feedback_by_type': {},
+            'feedback_by_priority': {},
+            'recent_feedback': 0,
+        }
+    
+    # إحصائيات عامة
+    total_submissions = FormSubmission.objects.count()
+    active_users = User.objects.filter(is_active=True).count()
+    
+    stats = {
+        'government_entities': gov_entities_stats,
+        'citizen_feedback': citizen_feedback_stats,
+        'total_submissions': total_submissions,
+        'active_users': active_users,
+    }
+    
+    serializer = DashboardStatsSerializer(stats)
+    return Response(serializer.data)

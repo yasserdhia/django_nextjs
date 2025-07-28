@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.11-bullseye
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
@@ -6,11 +6,19 @@ ENV PYTHONDONTWRITEBYTECODE=1
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies including SQL Server ODBC driver
 RUN apt-get update && apt-get install -y \
     gcc \
-    libpq-dev \
+    g++ \
+    unixodbc \
+    unixodbc-dev \
+    curl \
+    gnupg \
     netcat-traditional \
+    && curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
+    && curl https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list \
+    && apt-get update \
+    && ACCEPT_EULA=Y apt-get install -y msodbcsql17 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies

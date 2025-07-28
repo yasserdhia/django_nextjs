@@ -6,11 +6,11 @@
 ![Docker](https://img.shields.io/badge/Docker-Enabled-blue)
 ![Django](https://img.shields.io/badge/Django-4.2.7-darkgreen)
 ![Next.js](https://img.shields.io/badge/Next.js-13+-black)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue)
+![SQL Server](https://img.shields.io/badge/SQL%20Server-2019-red)
 
-**نظام متكامل لإدارة الاستمارات الحكومية وملاحظات المواطنين**
+**نظام متكامل لإدارة الاستمارات الحكومية وملاحظات المواطنين مع دعم SQL Server Management Studio 22**
 
-[🚀 Quick Start](#-quick-start) • [📖 Documentation](#-documentation) • [🛠️ API](#️-api-reference) • [🐳 Docker](#-docker-deployment)
+[🚀 Quick Start](#-quick-start) • [📖 Documentation](#-documentation) • [🛠️ API](#️-api-reference) • [🐳 Docker](#-docker-deployment) • [📊 SQL Server](#-sql-server-setup)
 
 </div>
 
@@ -21,8 +21,9 @@
 - [🎯 Project Overview](#-project-overview)
 - [✨ Features](#-features) 
 - [🏗️ System Architecture](#️-system-architecture)
-- [� Quick Start](#-quick-start)
-- [🐳 Docker Deployment](#-docker-deployment)
+- [🚀 Quick Start](#-quick-start)
+- [� SQL Server Setup](#-sql-server-setup)
+- [�🐳 Docker Deployment](#-docker-deployment)
 - [🛠️ API Reference](#️-api-reference)
 - [🔐 Authentication](#-authentication)
 - [🧪 Testing](#-testing)
@@ -33,11 +34,12 @@
 
 ## 🎯 Project Overview
 
-The **Government Forms Management System** is a comprehensive full-stack web application designed for managing government entity registrations and citizen feedback. Built with modern technologies and containerized for easy deployment.
+The **Government Forms Management System** is a comprehensive full-stack web application designed for managing government entity registrations and citizen feedback. Built with modern technologies and containerized for easy deployment with **SQL Server Management Studio 22 support**.
 
-### � Key Highlights
+### 🔥 Key Highlights
 
 - **Full-Stack Solution**: Django REST API + Next.js Frontend
+- **SQL Server Integration**: Compatible with SQL Server Management Studio 22
 - **Containerized**: Complete Docker-based deployment
 - **Bilingual Support**: Arabic and English interfaces
 - **Role-Based Access**: Admin, Staff, and Citizen permissions
@@ -47,6 +49,49 @@ The **Government Forms Management System** is a comprehensive full-stack web app
 - **React Hook Form** - Form handling
 - **Axios** - API calls
 - **React Hot Toast** - Notifications
+
+---
+
+## 📊 SQL Server Setup
+
+### 🎯 SQL Server Management Studio 22 Integration
+
+This project is fully compatible with **SQL Server Management Studio 22**. Follow these steps:
+
+#### 1. **تشغيل المشروع مع SQL Server**
+```bash
+# تشغيل المشروع مع SQL Server
+run_with_sqlserver.bat
+```
+
+#### 2. **اتصال SQL Server Management Studio**
+- **Server**: `localhost,1433`
+- **Authentication**: SQL Server Authentication
+- **Login**: `sa`
+- **Password**: `StrongPass123!`
+- **Database**: `formsdb`
+
+#### 3. **إعدادات قاعدة البيانات**
+```sql
+-- الجداول الرئيسية
+- accounts_user (جدول المستخدمين)
+- forms_citizenfeedback (ملاحظات المواطنين)
+- forms_governmententity (الكيانات الحكومية)
+- custom_forms_customform (الاستمارات المخصصة)
+- custom_forms_formresponse (استجابات الاستمارات)
+```
+
+#### 4. **أوامر إدارة قاعدة البيانات**
+```bash
+# إعداد قاعدة البيانات
+docker-compose exec backend python setup_sqlserver.py
+
+# عمل backup لقاعدة البيانات
+docker-compose exec db sqlcmd -S localhost -U sa -P StrongPass123! -Q "BACKUP DATABASE formsdb TO DISK = '/var/opt/mssql/backup/formsdb.bak'"
+
+# استعادة قاعدة البيانات
+docker-compose exec db sqlcmd -S localhost -U sa -P StrongPass123! -Q "RESTORE DATABASE formsdb FROM DISK = '/var/opt/mssql/backup/formsdb.bak'"
+```
 
 ---
 

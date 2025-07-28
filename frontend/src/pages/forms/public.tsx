@@ -54,7 +54,7 @@ const PublicFormsPage: React.FC = () => {
   const fetchPublicForms = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get('/api/forms/public/');
+      const response = await apiClient.get('/api/custom-forms/public/');
       setForms(response.data);
     } catch (error) {
       console.error('Error fetching public forms:', error);
@@ -127,7 +127,7 @@ const PublicFormsPage: React.FC = () => {
         submitter_email: user?.email || ''
       };
 
-      await apiClient.post('/api/forms/submit/', submissionData);
+      await apiClient.post('/api/custom-forms/submit/', submissionData);
       toast.success('تم إرسال الاستمارة بنجاح!');
       closeForm();
     } catch (error: any) {

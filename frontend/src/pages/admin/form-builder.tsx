@@ -161,7 +161,7 @@ const FormBuilderPage: React.FC = () => {
 
     setSaving(true);
     try {
-      const response = await apiClient.post('/api/forms/create/', {
+      const response = await apiClient.post('/api/custom-forms/create/', {
         title: formData.title,
         description: formData.description,
         category: formData.category,

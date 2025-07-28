@@ -52,7 +52,11 @@ class FormResponseCreateSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         form_id = validated_data.pop('form_id')
-        validated_data['form_id'] = form_id
+        try:
+            form = CustomForm.objects.get(id=form_id)
+            validated_data['form'] = form
+        except CustomForm.DoesNotExist:
+            raise serializers.ValidationError('الاستمارة غير موجودة')
         
         # Get IP address from request
         request = self.context.get('request')

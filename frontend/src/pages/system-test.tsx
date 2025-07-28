@@ -58,7 +58,7 @@ const SystemTestPage: React.FC = () => {
 
       // Test 4: Forms API
       try {
-        const response = await apiClient.get('/api/forms/manage/');
+        const response = await apiClient.get('/api/custom-forms/manage/');
         setTests(prev => ({
           ...prev,
           forms: { status: 'success', message: `Forms API working, found ${response.data.length} user forms` }
@@ -104,7 +104,7 @@ const SystemTestPage: React.FC = () => {
 
     // Test 3: Database connection (try to fetch forms)
     try {
-      const response = await apiClient.get('/api/forms/public/');
+      const response = await apiClient.get('/api/custom-forms/public/');
       setTests(prev => ({
         ...prev,
         database: { status: 'success', message: `Database accessible, found ${response.data.length} public forms` }
@@ -118,7 +118,7 @@ const SystemTestPage: React.FC = () => {
 
     // Test 4: Forms API
     try {
-      const response = await apiClient.get('/api/forms/manage/');
+      const response = await apiClient.get('/api/custom-forms/manage/');
       setTests(prev => ({
         ...prev,
         forms: { status: 'success', message: `Forms API working, found ${response.data.length} user forms` }

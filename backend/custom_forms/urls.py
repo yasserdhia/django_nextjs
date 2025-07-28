@@ -4,6 +4,9 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # قائمة جميع الاستمارات
+    path('', views.CustomFormListAllView.as_view(), name='custom_form_list_all'),
+    
     # إنشاء وإدارة الاستمارات
     path('create/', views.CustomFormCreateView.as_view(), name='custom_form_create'),
     path('public/', views.CustomFormListView.as_view(), name='custom_form_public_list'),

@@ -22,6 +22,14 @@ class CustomFormCreateView(generics.CreateAPIView):
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
 
+class CustomFormListAllView(generics.ListAPIView):
+    """قائمة جميع الاستمارات المخصصة"""
+    serializer_class = CustomFormSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        return CustomForm.objects.all()
+
 class CustomFormListView(generics.ListAPIView):
     """قائمة الاستمارات العامة"""
     serializer_class = CustomFormSerializer

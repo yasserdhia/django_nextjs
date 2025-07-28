@@ -44,7 +44,7 @@ const SystemTestPage: React.FC = () => {
 
       // Test 3: Database connection (try to fetch forms)
       try {
-        const response = await apiClient.get('/api/forms/public/');
+        const response = await apiClient.get('/api/custom-forms/public/');
         setTests(prev => ({
           ...prev,
           database: { status: 'success', message: `Database accessible, found ${response.data.length} public forms` }
